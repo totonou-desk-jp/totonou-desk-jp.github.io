@@ -1,0 +1,19 @@
+# アフィリエイトリンク設定。
+# 記事本文からは {% include affiliate.html id="items配下のキー" %} で参照する。
+# url が空、または該当プログラムの enabled が false の間は、affiliate.html が name のみをテキスト表示する
+# （壊れたリンクを出さないためのフォールバック）。
+# もしも・楽天ROOMの登録完了後、実データを投入して programs の enabled を true にする（段階4・別ラウンド）。
+
+programs:
+  moshimo:
+    name: もしもアフィリエイト
+    enabled: false
+  rakuten_room:
+    name: 楽天ROOM
+    enabled: false
+
+items:
+  example-tray:
+    name: 小物トレー（サンプル）
+    program: moshimo
+    url: ""

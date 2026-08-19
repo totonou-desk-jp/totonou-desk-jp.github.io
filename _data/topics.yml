@@ -1,0 +1,64 @@
+# 記事ネタのバックログ。
+# generate-article.ps1 は status: queued の先頭エントリを選び、記事生成後に status を used へ更新する。
+# 初期ネタは D:\Claude_Code\AI_DropShipping_Store\research\stage1-plan.md
+# 「2. コンテンツの柱と初期30本のネタ」のP2（ガジェット・買ってよかった○選）・P4（ノウハウ・共感）から、
+# 実体験の一人称表現を避けたブログ記事向けの切り口へ言い換えて転用している。
+# source_ref はネタ番号（同ファイル内の通し番号）による出典表記。
+
+topics:
+  - slug: desk-no-fixed-place
+    title: 散らかる原因は物の量ではなく、定位置のなさにある
+    source_ref: stage1-plan.md ネタ28
+    status: used
+  - slug: wireless-charger-how-to-choose
+    title: ワイヤレス充電器の選び方
+    source_ref: stage1-plan.md ネタ10
+    status: queued
+  - slug: desk-tray-for-keys-glasses
+    title: 鍵と眼鏡の定位置トレーの選び方
+    source_ref: stage1-plan.md ネタ11
+    status: queued
+  - slug: keyboard-accessories-guide
+    title: キーボード周りを整える小物の選び方
+    source_ref: stage1-plan.md ネタ12
+    status: queued
+  - slug: monitor-light-guide
+    title: モニターライトの選び方
+    source_ref: stage1-plan.md ネタ13
+    status: queued
+  - slug: power-strip-guide
+    title: 電源タップの選び方のポイント
+    source_ref: stage1-plan.md ネタ14
+    status: queued
+  - slug: phone-stand-guide
+    title: スマホスタンドの選び方
+    source_ref: stage1-plan.md ネタ15
+    status: queued
+  - slug: usb-hub-guide
+    title: USBハブの選び方
+    source_ref: stage1-plan.md ネタ16
+    status: queued
+  - slug: chair-mat-guide
+    title: デスクチェアの下に敷くものの選び方
+    source_ref: stage1-plan.md ネタ17
+    status: queued
+  - slug: desk-item-mistakes
+    title: デスク用品選びで後悔しやすいポイント
+    source_ref: stage1-plan.md ネタ18
+    status: queued
+  - slug: focus-desk-common-points
+    title: 集中しやすい机に共通する特徴
+    source_ref: stage1-plan.md ネタ25
+    status: queued
+  - slug: remote-work-shoulder-stiffness
+    title: 在宅ワークの肩こりとデスク環境の見直し方
+    source_ref: stage1-plan.md ネタ26
+    status: queued
+  - slug: weekly-desk-cleaning-routine
+    title: デスク掃除を週1ルーティンにするコツ
+    source_ref: stage1-plan.md ネタ27
+    status: queued
+  - slug: 100-yen-shop-desk-items
+    title: 100均で十分なデスク用品とそうでないもの
+    source_ref: stage1-plan.md ネタ29
+    status: queued

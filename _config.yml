@@ -1,0 +1,38 @@
+title: 整うデスク
+description: デスク周りを、静かに整えるための実用記事メディア。
+lang: ja
+timezone: Asia/Tokyo
+
+# 段階0（GitHubリポジトリ作成・Pages有効化）完了後に <GitHubユーザー名> を実値へ置き換える。
+# baseurlはリポジトリ名 totonou-desk に確定済み（承認記録・docs/operations-runbook.md参照）。
+url: ""
+baseurl: "/totonou-desk"
+
+permalink: /posts/:slug/
+
+logo: /assets/images/icon.png
+image: /assets/images/banner.png
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-feed
+
+markdown: kramdown
+kramdown:
+  input: GFM
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+
+exclude:
+  - prompts/
+  - scripts/
+  - docs/
+  - CLAUDE.md
+  - README.md
+  - .github/
