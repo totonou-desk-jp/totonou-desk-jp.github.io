@@ -113,8 +113,11 @@ $promptTemplate
 ## 既存記事一覧（内部リンク候補）
 $existingPostsList
 
-## 出力先
+## 出力ファイル名（参考情報。ファイルはこのスクリプトが作成する）
 _posts/$postFileName
+
+## 出力方法（厳守）
+ファイルの作成・編集ツールは一切使わないこと。記事Markdownの中身だけを、そのまま応答本文として出力すること。
 "@
 
 # 5. Claude Code CLI呼び出し（記事Markdown本体のみを標準出力させる）
@@ -149,8 +152,6 @@ if ($SkipPush) {
 }
 
 # 8. コミット・push
-# _data/affiliates.ymlも対象に含める。生成プロンプトの指示（prompts/article-generation.md）で
-# 未登録のアフィリエイトキーをitemsへ追加した場合、その追記を同じPRに載せるため。
 Invoke-Git add $postPath $topicsPath $affiliatesPath
 Invoke-Git commit -m "feat(posts): $($selectedTopic.Title) を追加"
 Invoke-Git push -u origin $branch

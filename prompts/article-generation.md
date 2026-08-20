@@ -3,8 +3,9 @@
 `scripts/generate-article.ps1` が `claude -p` に渡すプロンプトの本体。実行基盤（PC上のClaude Code /
 将来のGitHub Actions）に依存しない資産として、このリポジトリ内で管理する。
 
-呼び出し側（generate-article.ps1）は、この本文の末尾に「今回のテーマ」「既存記事一覧」「出力先ファイルパス」を
+呼び出し側（generate-article.ps1）は、この本文の末尾に「今回のテーマ」「既存記事一覧」「出力ファイル名」「出力方法」を
 追記して渡す。出力はMarkdownファイルの中身のみとし、説明文や前置きは含めないこと。
+ファイルの作成はスクリプト側が行うため、生成側はファイル作成・編集ツールを使わない（非対話実行では書き込み許可が取れず停止する。2026-08-20のスケジューラ実行で実測）。
 
 ## 条件
 
@@ -41,8 +42,7 @@ affiliate: true または false（本文に affiliate.html のインクルード
 ## アフィリエイトリンク
 
 - 商品を紹介する場合は、生URLではなく `{% include affiliate.html id="_data/affiliates.yml の items 配下のキー" %}` の形式で挿入する
-- `_data/affiliates.yml` に存在しないキーを使う場合は、同時にそのキーのエントリを `_data/affiliates.yml` の
-  `items` にも追加する（`url` は空文字のままでよい）
+- `_data/affiliates.yml` の items に無いキーは使わない（生成側はファイルの作成・編集をしないため、キーを追加できない）。該当するキーが無い場合は、アフィリエイトリンクを入れずに書く
 
 ## 禁止事項
 
