@@ -37,6 +37,33 @@ function Invoke-Git {
     }
 }
 
+function Remove-WrappingCodeFence {
+    # claude -pの出力が```で丸ごと包まれることがある（実測: 2026-08-20のスケジューラ実行でoutput全体が
+    # ```markdown フェンスに包まれ、front matter判定が不合格になった）。フェンス行と先頭空白以外のバイトは
+    # 変更しない（行の分割・再結合をしないため改行コードは変わらず、validate-article.ps1の文字数カウントに
+    # 影響しない）。前置き文（「記事は以下です」等）は対象外とし、除去しない（未実測パターンへの推測的な
+    # 除去は本文誤削のリスクがあるため、サニティ不合格からのリトライに委ねる）。
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) {
+        return [PSCustomObject]@{ Text = $Text; FenceRemoved = $false }
+    }
+    # 先頭の空白・空行を除去する（front matterがテキスト先頭バイトから始まることを保証する）。
+    $trimmed = $Text -replace '^\s+', ''
+    # 先頭の非空行が```言語名または```単独行なら、その行を除去する。
+    $leadingFence = [regex]::Match($trimmed, '^```[^\r\n]*\r?\n')
+    if (-not $leadingFence.Success) {
+        return [PSCustomObject]@{ Text = $trimmed; FenceRemoved = $false }
+    }
+    $withoutLeadingFence = $trimmed.Substring($leadingFence.Length)
+    # 先頭フェンスを除去した場合に限り、末尾の```単独行（+後続空白）を除去する
+    # （記事本文が正当にコードブロックで終わるケースを誤って削らないためのガード）。
+    $trailingFence = [regex]::Match($withoutLeadingFence, '\r?\n```[ \t]*\s*\z')
+    if ($trailingFence.Success) {
+        $withoutLeadingFence = $withoutLeadingFence.Substring(0, $trailingFence.Index)
+    }
+    return [PSCustomObject]@{ Text = $withoutLeadingFence; FenceRemoved = $true }
+}
+
 function Get-NextQueuedTopic {
     param([string]$TopicsPath)
     $content = Get-Content -Path $TopicsPath -Raw -Encoding UTF8
@@ -103,6 +130,9 @@ $existingPostsList = if ($existingPosts) { ($existingPosts -join "`n") } else { 
 # 4. プロンプト組み立て
 $promptTemplate = Get-Content -Path (Join-Path $repoRoot 'prompts/article-generation.md') -Raw -Encoding UTF8
 $postFileName = "$date-$slug.md"
+# ```を含む文は二重引用符付きヒアストリング（$fullPrompt側）の中で直接書くとバッククォート（PowerShellの
+# エスケープ文字）として解釈されてしまうため、バッククォートを処理しない単一引用符の文字列として先に組み立てる。
+$fenceWarning = '出力全体をコードフェンス（```）で囲まないこと。1行目は --- で始めること。'
 $fullPrompt = @"
 $promptTemplate
 
@@ -118,26 +148,92 @@ _posts/$postFileName
 
 ## 出力方法（厳守）
 ファイルの作成・編集ツールは一切使わないこと。記事Markdownの中身だけを、そのまま応答本文として出力すること。
+$fenceWarning
 "@
 
-# 5. Claude Code CLI呼び出し（記事Markdown本体のみを標準出力させる）
+# 5〜6. Claude Code CLI呼び出し（記事Markdown本体のみを標準出力させる）→ 正規化 → 機械検証、を最大3試行
+# （初回＋リトライ2回）まで繰り返す。本文文字数はLLMが数えられないため一発生成では確率的に下限割れしうる
+# （実測: 2026-08-20のスケジューラ実行で2,268字・2,499字が不合格）。失敗は2系統に分ける。
+#   - 環境起因（終了コード非0・空出力）: 認証失効等は再試行しても直らないため、即座に例外にする
+#   - 生成品質起因（正規化後もfront matter開始でない／validate不合格）: 次の試行へ進み、不合格理由を
+#     プロンプト末尾へ付加してフィードバックする
 # BOM付きUTF-8で書き出すとJekyllのfront matter判定（先頭が---か）に失敗し記事が公開されない場合があるため、
 # BOMなしUTF-8で明示的に書き出す（Out-File -Encoding UTF8はWindows PowerShell 5.1ではBOM付きになる）。
 $postPath = Join-Path $repoRoot "_posts/$postFileName"
-$article = $fullPrompt | claude -p | Out-String
-$claudeExit = $LASTEXITCODE
-# claude CLIは認証失効等のエラー文を標準出力に返すことがある（実測: OAuth失効時「Failed to authenticate: ...」）。
-# エラー文を記事として保存しないよう、終了コードとfront matter開始（---）を確認してから書き出す。
-if ($claudeExit -ne 0 -or [string]::IsNullOrWhiteSpace($article) -or $article -notmatch '(?s)^\s*---') {
-    $head = if ($article -and $article.Length -gt 120) { $article.Substring(0, 120) } else { $article }
-    throw "claude CLIの記事生成に失敗しました（終了コード: $claudeExit / 出力先頭: $head）。'claude' を単体で実行して認証状態を確認してください。ブランチ $branch はローカルに残っています。"
-}
-[System.IO.File]::WriteAllText($postPath, $article, (New-Object System.Text.UTF8Encoding($false)))
+$maxAttempts = 3
+$attemptFeedback = $null
+$attemptFailures = New-Object System.Collections.Generic.List[string]
+$validateSucceeded = $false
 
-# 6. 機械検証
-& (Join-Path $repoRoot 'scripts/validate-article.ps1') -Path $postPath
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "validate-article.ps1 が失敗しました。push/PR作成を中止します。ブランチ $branch とファイルはローカルに残しています。"
+for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+    Write-Host "記事生成 試行 $attempt/$maxAttempts"
+
+    $attemptPrompt = $fullPrompt
+    if ($attemptFeedback) {
+        $attemptPrompt = @"
+$fullPrompt
+
+## 前回出力の不合格理由（今回の出力で必ず解消すること）
+$attemptFeedback
+"@
+    }
+
+    $article = $attemptPrompt | claude -p | Out-String
+    $claudeExit = $LASTEXITCODE
+    # claude CLIは認証失効等のエラー文を標準出力に返すことがある（実測: OAuth失効時「Failed to authenticate: ...」）。
+    # 終了コード非0または空出力は環境起因（再試行しても直らない）とみなし、リトライせず即座に例外にする。
+    if ($claudeExit -ne 0 -or [string]::IsNullOrWhiteSpace($article)) {
+        $head = if ($article -and $article.Length -gt 120) { $article.Substring(0, 120) } else { $article }
+        throw "claude CLIの記事生成に失敗しました（終了コード: $claudeExit / 出力先頭: $head）。環境起因の可能性があります。'claude' を単体で実行して認証状態を確認してください。ブランチ $branch はローカルに残っています。"
+    }
+
+    # 出力全体がコードフェンスで包まれることがある（実測: 2026-08-20のスケジューラ実行）ため、
+    # front matter開始（---）の判定前に正規化する。
+    $normalized = Remove-WrappingCodeFence -Text $article
+    if ($normalized.FenceRemoved) {
+        Write-Host "出力先頭のコードフェンスを除去しました。"
+    }
+
+    if ($normalized.Text -notmatch '^---') {
+        $head = if ($normalized.Text.Length -gt 120) { $normalized.Text.Substring(0, 120) } else { $normalized.Text }
+        $reason = "出力がfront matterの開始（---）で始まっていません（出力先頭: $head）。認証エラーではありません（形式ゆらぎ）。"
+        Write-Host "[試行 $attempt/$maxAttempts 不合格] $reason"
+        $attemptFailures.Add("試行 ${attempt}/${maxAttempts}: $reason")
+        $attemptFeedback = '出力の1行目が --- で始まっていませんでした。出力全体をコードフェンス（```）で囲まず、1行目を --- にしてください。'
+        continue
+    }
+
+    [System.IO.File]::WriteAllText($postPath, $normalized.Text, (New-Object System.Text.UTF8Encoding($false)))
+
+    # 機械検証。Write-HostはWindows PowerShell 5.1では情報ストリーム(6)へ出力されるため6>&1で捕捉し、
+    # ログへの記録を維持するため捕捉後にWrite-Hostで再出力する。
+    $validateOutput = & (Join-Path $repoRoot 'scripts/validate-article.ps1') -Path $postPath 6>&1
+    $validateExit = $LASTEXITCODE
+    foreach ($line in $validateOutput) {
+        Write-Host $line
+    }
+
+    if ($validateExit -eq 0) {
+        $validateSucceeded = $true
+        break
+    }
+
+    $reason = "validate-article.ps1が不合格でした（生成品質起因。認証エラーではありません）。"
+    Write-Host "[試行 $attempt/$maxAttempts 不合格] $reason"
+    $attemptFailures.Add("試行 ${attempt}/${maxAttempts}: $reason")
+    $attemptFeedback = ($validateOutput | Out-String).Trim()
+}
+
+if (-not $validateSucceeded) {
+    Write-Host "$maxAttempts 回の試行すべてで検証に通りませんでした。push/PR作成を中止します。"
+    foreach ($f in $attemptFailures) {
+        Write-Host "  - $f"
+    }
+    if (Test-Path $postPath) {
+        Write-Host "ブランチ $branch とファイル $postPath はローカルに残しています。"
+    } else {
+        Write-Host "ブランチ $branch はローカルに残っていますが、記事ファイルは作成されていません（全試行が出力形式の不合格でした）。"
+    }
     exit 1
 }
 

@@ -50,6 +50,7 @@ powershell -File D:\Claude_Code\totonou-desk\scripts\register-scheduled-task.ps1
 - `validate-article.ps1` が失敗する: 出力されたエラー内容に従って `_posts/` 配下の該当ファイルを修正し、再実行する（検査項目は `scripts/validate-article.ps1` の実装を参照）
 - 生成された記事の内容に問題がある: PRをマージせず、レビューコメントで指摘してから `revise-article.ps1` を使う（直接ローカルでファイルを書き換えてpushしても動作はするが、承認証跡がPRコメントに残らなくなる）
 - 日曜の自動実行後にPRが作成されていない: `logs\generate-article.log` の末尾を確認する（週次実行の標準出力・エラーはこのファイルに追記される）
+- `generate-article.ps1` が最大3試行とも不合格でPR未作成: `logs\generate-article.log` に試行ごとの不合格理由（形式ゆらぎ・本文の文字数が範囲外等の検証項目）が記録されるため確認し、`_data/topics.yml` のネタは検証通過まで `queued` のままのため、必要に応じて `powershell -File scripts\generate-article.ps1` を手動再実行する（同じネタで再試行される）。再実行の前に、失敗時に残ったブランチと記事ファイルを `git checkout main`・`git branch -D <ログに出力されたブランチ名>`・`Remove-Item <ログに出力された記事ファイルのパス>` で片づける（同名ブランチが残っていると同じ日の再実行がブランチ作成で失敗し、未検証の記事ファイルが `_posts` に残っていると次の生成の内部リンク候補に混ざる）
 
 ## 段階4（後日・別ラウンド、本書の対象外）
 
