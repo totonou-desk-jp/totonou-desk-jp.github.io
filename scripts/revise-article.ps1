@@ -15,6 +15,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# 日本語プロンプトをコマンドライン引数で渡すと、claudeが「ご依頼の内容が読み取れませんでした」と応答して生成に失敗した（実測）。
+# 標準入力で渡すと日本語が往復することを確認したため、パイプ渡しに統一する。$OutputEncodingは標準入力へ書き出す文字コード、
+# [Console]::OutputEncodingは標準出力を解釈する文字コードで、日本語の往復には両方の固定が要る。
+$OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 function Invoke-Git {
     # gitはネイティブコマンドのため$ErrorActionPreference='Stop'では失敗が捕捉されない。
@@ -82,7 +87,7 @@ $currentArticle
 # 4. Claude Code CLI呼び出し
 # BOM付きUTF-8で書き出すとJekyllのfront matter判定（先頭が---か）に失敗する場合があるため、
 # BOMなしUTF-8で明示的に書き出す（Out-File -Encoding UTF8はWindows PowerShell 5.1ではBOM付きになる）。
-$revisedArticle = claude -p $revisePrompt | Out-String
+$revisedArticle = $revisePrompt | claude -p | Out-String
 $claudeExit = $LASTEXITCODE
 # claude CLIは認証失効等のエラー文を標準出力に返すことがある。
 # エラー文で既存記事を上書きしないよう、終了コードとfront matter開始（---）を確認してから書き出す。

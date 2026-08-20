@@ -20,6 +20,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# 日本語プロンプトをコマンドライン引数で渡すと、claudeが「ご依頼の内容が読み取れませんでした」と応答して生成に失敗した（実測）。
+# 標準入力で渡すと日本語が往復することを確認したため、パイプ渡しに統一する。$OutputEncodingは標準入力へ書き出す文字コード、
+# [Console]::OutputEncodingは標準出力を解釈する文字コードで、日本語の往復には両方の固定が要る。
+$OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
@@ -117,7 +122,7 @@ _posts/$postFileName
 # BOM付きUTF-8で書き出すとJekyllのfront matter判定（先頭が---か）に失敗し記事が公開されない場合があるため、
 # BOMなしUTF-8で明示的に書き出す（Out-File -Encoding UTF8はWindows PowerShell 5.1ではBOM付きになる）。
 $postPath = Join-Path $repoRoot "_posts/$postFileName"
-$article = claude -p $fullPrompt | Out-String
+$article = $fullPrompt | claude -p | Out-String
 $claudeExit = $LASTEXITCODE
 # claude CLIは認証失効等のエラー文を標準出力に返すことがある（実測: OAuth失効時「Failed to authenticate: ...」）。
 # エラー文を記事として保存しないよう、終了コードとfront matter開始（---）を確認してから書き出す。
