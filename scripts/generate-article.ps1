@@ -118,8 +118,12 @@ _posts/$postFileName
 # BOMなしUTF-8で明示的に書き出す（Out-File -Encoding UTF8はWindows PowerShell 5.1ではBOM付きになる）。
 $postPath = Join-Path $repoRoot "_posts/$postFileName"
 $article = claude -p $fullPrompt | Out-String
-if ([string]::IsNullOrWhiteSpace($article)) {
-    throw "記事生成に失敗しました（出力が空です）。"
+$claudeExit = $LASTEXITCODE
+# claude CLIは認証失効等のエラー文を標準出力に返すことがある（実測: OAuth失効時「Failed to authenticate: ...」）。
+# エラー文を記事として保存しないよう、終了コードとfront matter開始（---）を確認してから書き出す。
+if ($claudeExit -ne 0 -or [string]::IsNullOrWhiteSpace($article) -or $article -notmatch '(?s)^\s*---') {
+    $head = if ($article -and $article.Length -gt 120) { $article.Substring(0, 120) } else { $article }
+    throw "claude CLIの記事生成に失敗しました（終了コード: $claudeExit / 出力先頭: $head）。'claude' を単体で実行して認証状態を確認してください。ブランチ $branch はローカルに残っています。"
 }
 [System.IO.File]::WriteAllText($postPath, $article, (New-Object System.Text.UTF8Encoding($false)))
 
