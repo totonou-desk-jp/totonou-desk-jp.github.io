@@ -2,8 +2,8 @@
 .SYNOPSIS
     PRのレビューコメントを取り込み、対象記事を修正して同じブランチへ追いpushする。
 .DESCRIPTION
-    gh pr view --json でPRのコメントと変更ファイルを取得し、claude -pに現在の記事本文と修正指示を渡して
-    修正稿を生成する。修正後はscripts/validate-article.ps1で再検証し、通過した場合のみ
+    gh pr view --json でPRの会話コメント・レビュー本文と変更ファイルを取得し、claude -pに現在の記事本文と
+    修正指示を渡して修正稿を生成する。修正後はscripts/validate-article.ps1で再検証し、通過した場合のみ
     コミット・pushする（同じPRへ自動的に反映される）。
 .PARAMETER PullRequestNumber
     修正対象のPR番号。
@@ -15,6 +15,17 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Invoke-Git {
+    # gitはネイティブコマンドのため$ErrorActionPreference='Stop'では失敗が捕捉されない。
+    # $LASTEXITCODEを明示的に検査し、失敗時は例外として上位へ伝える。
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$GitArgs)
+    & git @GitArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "git $($GitArgs -join ' ') が失敗しました（終了コード $LASTEXITCODE）。"
+    }
+}
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
@@ -25,9 +36,15 @@ if (-not $ghAvailable) {
 }
 
 # 1. PR情報取得
-$prJson = gh pr view $PullRequestNumber --json headRefName,comments,files | ConvertFrom-Json
+# gh pr view --json comments が返すのは会話タブのIssueコメントのみで、レビュー（Approve/Request changes）の
+# 本文はreviews側に入るため、両方を取得して結合する。
+$prJson = gh pr view $PullRequestNumber --json headRefName,comments,reviews,files | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0 -or -not $prJson) {
+    throw "gh pr view に失敗しました（PR #$PullRequestNumber）。PR番号と 'gh auth status' を確認してください。"
+}
 $branch = $prJson.headRefName
-$comments = ($prJson.comments | ForEach-Object { $_.body }) -join "`n---`n"
+$commentBodies = @($prJson.comments | ForEach-Object { $_.body }) + @($prJson.reviews | ForEach-Object { $_.body })
+$comments = ($commentBodies | Where-Object { $_ -and $_.Trim() -ne '' }) -join "`n---`n"
 
 if (-not $comments) {
     Write-Host "PR #$PullRequestNumber に修正指示のコメントが見つかりません。"
@@ -41,9 +58,12 @@ if (-not $targetFile) {
     exit 1
 }
 
-git fetch origin $branch
-git checkout $branch
-git pull origin $branch
+Invoke-Git fetch origin $branch
+Invoke-Git checkout $branch
+if ((git rev-parse --abbrev-ref HEAD) -ne $branch) {
+    throw "PRブランチへの切り替えに失敗しました: $branch"
+}
+Invoke-Git pull origin $branch
 
 # 3. 修正プロンプト組み立て
 $targetPath = Join-Path $repoRoot $targetFile
@@ -60,7 +80,13 @@ $currentArticle
 "@
 
 # 4. Claude Code CLI呼び出し
-claude -p $revisePrompt | Out-File -FilePath $targetPath -Encoding UTF8
+# BOM付きUTF-8で書き出すとJekyllのfront matter判定（先頭が---か）に失敗する場合があるため、
+# BOMなしUTF-8で明示的に書き出す（Out-File -Encoding UTF8はWindows PowerShell 5.1ではBOM付きになる）。
+$revisedArticle = claude -p $revisePrompt | Out-String
+if ([string]::IsNullOrWhiteSpace($revisedArticle)) {
+    throw "記事の修正生成に失敗しました（出力が空です）。"
+}
+[System.IO.File]::WriteAllText($targetPath, $revisedArticle, (New-Object System.Text.UTF8Encoding($false)))
 
 # 5. 機械検証
 & (Join-Path $repoRoot 'scripts/validate-article.ps1') -Path $targetPath
@@ -70,8 +96,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 6. コミット・追いpush
-git add $targetFile
-git commit -m "fix(posts): PR #$PullRequestNumber のレビュー指摘を反映"
-git push origin $branch
+Invoke-Git add $targetFile
+if (-not (git status --porcelain -- $targetFile)) {
+    Write-Host "修正内容に変化がありませんでした。PRコメントの指示内容を確認してください。"
+    exit 1
+}
+Invoke-Git commit -m "fix(posts): PR #$PullRequestNumber のレビュー指摘を反映"
+Invoke-Git push origin $branch
 
 Write-Host "PR #$PullRequestNumber のブランチ $branch に修正をpushしました。"

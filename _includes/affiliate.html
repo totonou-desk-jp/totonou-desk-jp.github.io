@@ -1,16 +1,17 @@
-{% comment %}
+{%- comment -%}
   アフィリエイトリンクの差し込み用include。
   使い方: {% include affiliate.html id="_data/affiliates.yml の items 配下のキー" %}
   リンク未確定（url未設定）またはプログラムのenabledがfalseの間は、商品名のみのテキスト表示にフォールバックする。
-{% endcomment %}
-{% assign aff_item = site.data.affiliates.items[include.id] %}
-{% if aff_item %}
-  {% assign aff_program = site.data.affiliates.programs[aff_item.program] %}
-  {% if aff_program.enabled and aff_item.url and aff_item.url != "" %}
+  文中に差し込むため、出力の前後に改行・空白を出さない（Markdownの段落が分断されるため）。
+{%- endcomment -%}
+{%- assign aff_item = site.data.affiliates.items[include.id] -%}
+{%- if aff_item -%}
+  {%- assign aff_program = site.data.affiliates.programs[aff_item.program] -%}
+  {%- if aff_program.enabled and aff_item.url and aff_item.url != "" -%}
 <a href="{{ aff_item.url }}" rel="sponsored noopener" target="_blank">{{ aff_item.name }}</a>
-  {% else %}
+  {%- else -%}
 {{ aff_item.name }}
-  {% endif %}
-{% else %}
+  {%- endif -%}
+{%- else -%}
 {{ include.id }}
-{% endif %}
+{%- endif -%}

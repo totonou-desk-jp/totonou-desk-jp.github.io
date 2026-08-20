@@ -3,7 +3,8 @@ description: デスク周りを、静かに整えるための実用記事メデ�
 lang: ja
 timezone: Asia/Tokyo
 
-# 段階0（GitHubリポジトリ作成・Pages有効化）完了後に <GitHubユーザー名> を実値へ置き換える。
+# 段階0（GitHubリポジトリ作成・Pages有効化）完了後、url に `https://<GitHubユーザー名>.github.io` を設定する（手順: docs/operations-runbook.md）。
+# url が空の間は canonical・og:url・og:image が絶対URLにならず、SNS共有時のカード表示が正しく出ない場合がある。
 # baseurlはリポジトリ名 totonou-desk に確定済み（承認記録・docs/operations-runbook.md参照）。
 url: ""
 baseurl: "/totonou-desk"
@@ -21,6 +22,7 @@ plugins:
 markdown: kramdown
 kramdown:
   input: GFM
+  hard_wrap: false
 
 defaults:
   - scope:

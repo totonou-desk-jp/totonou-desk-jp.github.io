@@ -7,6 +7,7 @@
     StartWhenAvailable設定（タスクスケジューラの「スケジュールされた開始を逃した場合はすぐにタスクを開始する」）により、
     次回PC起動時に実行される。
     実行には gh CLI のインストールと認証（gh auth login）が完了している必要がある（段階0のユーザー作業）。
+    実行時の標準出力・エラーは logs/generate-article.log に追記される。
 .PARAMETER TaskName
     登録するタスク名。省略時は既定値を使う。
 .EXAMPLE
@@ -25,8 +26,12 @@ if (-not (Test-Path $scriptPath)) {
     throw "generate-article.ps1 が見つかりません: $scriptPath"
 }
 
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" `
+$logDir = Join-Path $repoRoot 'logs'
+New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+$logPath = Join-Path $logDir 'generate-article.log'
+
+$action = New-ScheduledTaskAction -Execute 'cmd.exe' `
+    -Argument "/c powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" >> `"$logPath`" 2>&1" `
     -WorkingDirectory $repoRoot
 
 $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 21:00

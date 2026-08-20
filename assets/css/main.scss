@@ -4,7 +4,7 @@
   --color-bg: #FBFAF8;
   --color-text: #1C1B19;
   --color-text-soft: rgba(28, 27, 25, 0.7);
-  --color-text-faint: rgba(28, 27, 25, 0.5);
+  --color-text-faint: rgba(28, 27, 25, 0.62);
   --color-border: rgba(28, 27, 25, 0.12);
   --font-heading: "Shippori Mincho", serif;
   --font-body: "Noto Sans JP", sans-serif;
@@ -57,9 +57,10 @@ img {
   margin: 0 auto;
   padding: var(--space-2) var(--space-3);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-1) var(--space-2);
 }
 
 .site-header__brand {
@@ -96,8 +97,8 @@ img {
   margin: 0;
   padding: var(--space-1) var(--space-3);
   background: var(--color-bg);
-  color: var(--color-text-faint);
-  font-size: 0.75rem;
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
   text-align: center;
 }
 
@@ -168,8 +169,7 @@ img {
   margin: 0 0 var(--space-2);
 }
 
-.post__affiliate-notice,
-.page__body p:first-child.ad-disclosure {
+.post__affiliate-notice {
   color: var(--color-text-faint);
   font-size: 0.85rem;
 }
@@ -215,4 +215,24 @@ img {
   padding: 0 var(--space-3) var(--space-3);
   color: var(--color-text-faint);
   font-size: 0.75rem;
+}
+
+.post__nav {
+  margin-top: var(--space-4);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.site-header__nav a,
+.site-footer__nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.site-header__nav a:hover,
+.site-footer__nav a:hover,
+.post-list__item a:hover {
+  text-decoration: underline;
 }

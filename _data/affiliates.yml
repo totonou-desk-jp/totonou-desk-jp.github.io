@@ -14,6 +14,6 @@ programs:
 
 items:
   example-tray:
-    name: 小物トレー（サンプル）
+    name: 小物トレー
     program: moshimo
     url: ""
