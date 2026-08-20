@@ -4,7 +4,7 @@
 
 ## 段階0: ユーザー作業（完了）
 
-サイト骨格・生成パイプラインの実装（本リポジトリの大半）は完了済み。以下のユーザー作業も完了し、サイトは `https://yuuminaduki1080.github.io/totonou-desk/` で公開されている。本節は実施手順の記録として残す。
+サイト骨格・生成パイプラインの実装（本リポジトリの大半）と以下のユーザー作業はいずれも完了済み。2026-08-20にリポジトリをOrganizationへ移管・リネームし（`totonou-desk-jp/totonou-desk-jp.github.io`）、サイトは `https://totonou-desk-jp.github.io/` で公開されている。以下の番号付き手順は移管前の初回セットアップ時の記録。
 
 1. GitHubアカウントの確認（Freeプランで可。Pagesはpublicリポジトリで無料公開できる）
 2. [gh CLI](https://cli.github.com/) のインストール（インストーラーの実行にUAC承認が必要なため、ユーザー作業）
@@ -16,7 +16,7 @@
    git push -u origin main
    ```
 6. リポジトリの Settings → Pages で、Source を「Deploy from a branch」・ブランチを `main`・ディレクトリを `/`（ルート）に設定して有効化
-7. `_config.yml` の `url:` を `https://<GitHubユーザー名>.github.io` に更新してコミット（baseurlは `/totonou-desk` で確定済み・変更不要）
+7. `_config.yml` の `url:` を `https://<GitHubユーザー名>.github.io` に更新してコミット（当時のbaseurl設定は `/totonou-desk`）
 8. Pages公開後、`https://<GitHubユーザー名>.github.io/totonou-desk/` でトップページ・サンプル記事・固定ページ（運営者情報／プライバシーポリシー／広告ポリシー）の表示を確認する
 
 ## 週次サイクル（段階0完了後）

@@ -3,9 +3,10 @@ description: 整理整頓とミニマルな道具選びで、心地よくとと�
 lang: ja
 timezone: Asia/Tokyo
 
-# baseurlはリポジトリ名 totonou-desk に確定済み（承認記録は D:\Claude_Code\AI_DropShipping_Store\research\blog-design-plan.md 冒頭）。
-url: "https://yuuminaduki1080.github.io"
-baseurl: "/totonou-desk"
+# Organizationサイト（リポジトリ名 totonou-desk-jp.github.io）のためルート直下で配信し、baseurlは空にする。
+# 2026-08-20にYuuMinaduki1080/totonou-deskから移管・リネーム（経緯は docs/operations-runbook.md 段階0）。
+url: "https://totonou-desk-jp.github.io"
+baseurl: ""
 
 permalink: /posts/:slug/
 
