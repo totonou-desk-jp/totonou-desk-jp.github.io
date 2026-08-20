@@ -19,8 +19,3 @@
 `assets/images/` の4点（`icon.png` / `icon-zoom.png` / `banner.png` / `banner-x.png`）は、
 `D:\Claude_Code\AI_DropShipping_Store\assets\totonou-desk\` にある原本のコピーである。
 画像の作成・更新は原本側で行い、更新後にこのディレクトリへ再コピーする。
-
-## 現在の状態
-
-段階0（GitHub上でのリポジトリ作成・Pages有効化・gh CLI認証）はユーザー作業として未完了。
-詳細と手順は `docs/operations-runbook.md` を参照。

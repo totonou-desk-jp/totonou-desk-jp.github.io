@@ -1,12 +1,11 @@
 ---
 layout: default
 title: 整うデスク
-description: デスク周りを、静かに整えるための実用記事メディア。
 ---
 
 <section class="hero">
   <h1 class="hero__title">整うデスク</h1>
-  <p class="hero__lead">机の上が整うと、頭の中も整う。<br>デスク周りの整え方を、静かに届けます。</p>
+  <p class="hero__lead">机の上が整うと、頭の中も整う。<br>余計なものを手放して、心地よくととのうデスクをつくります。</p>
 </section>
 
 <section class="post-list">

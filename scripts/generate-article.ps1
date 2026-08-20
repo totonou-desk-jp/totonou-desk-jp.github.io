@@ -6,8 +6,7 @@
     (3) prompts/article-generation.mdを土台にプロンプトを組み立て、claude -pで記事Markdownを生成
     (4) scripts/validate-article.ps1で検証 (5) 検証通過時のみtopics.ymlのstatusをusedへ更新し、
     コミット・push・gh pr create。
-    gh CLIが未導入の場合は、pushまで行いPR作成手順を案内して終了する
-    （承認済み設計の確定事項: gh CLI未導入のためリモートpush・PR作成は段階0完了後の後続作業）。
+    gh CLIが未導入の場合は、pushまで行いPR作成手順を案内して終了する。
 .PARAMETER Topic
     指定時はtopics.ymlのバックログを使わず、このテーマ文字列で生成する（手動テスト・単発トピック用）。
 .PARAMETER SkipPush
