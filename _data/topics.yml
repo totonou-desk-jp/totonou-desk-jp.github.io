@@ -25,7 +25,7 @@ topics:
   - slug: monitor-light-guide
     title: モニターライトの選び方
     source_ref: stage1-plan.md ネタ13
-    status: queued
+    status: used
   - slug: power-strip-guide
     title: 電源タップの選び方のポイント
     source_ref: stage1-plan.md ネタ14
